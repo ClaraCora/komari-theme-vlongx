@@ -1,5 +1,5 @@
 import type { LatestStatus, NodeInfo } from "../lib/api";
-import { CURRENCY_SYMBOLS, normalizeCurrency } from "../lib/finance";
+import { CURRENCY_SYMBOLS, normalizeCurrency, remainingValue as calculateRemainingValue } from "../lib/finance";
 import { daysUntil, fmtBytes, fmtPercent, fmtSpeed, shortOs, trafficUsed } from "../lib/format";
 import { fmtDaysLeft, t } from "../lib/i18n";
 import { osIcon } from "../lib/osIcon";
@@ -75,6 +75,7 @@ function StatPair({
   firstIcon,
   first,
   firstColor,
+  firstValueColor,
   secondIcon,
   second,
   secondColor,
@@ -83,6 +84,7 @@ function StatPair({
   firstIcon: string;
   first: string;
   firstColor?: string;
+  firstValueColor?: string;
   secondIcon: string;
   second: string;
   secondColor?: string;
@@ -90,7 +92,7 @@ function StatPair({
 }) {
   return (
     <div className="resource-stat-pair num" title={title}>
-      <span><i style={{ color: firstColor }}>{firstIcon}</i>{first}</span>
+      <span style={{ color: firstValueColor }}><i style={{ color: firstColor }}>{firstIcon}</i>{first}</span>
       <span><i style={{ color: secondColor }}>{secondIcon}</i>{second}</span>
     </div>
   );
@@ -140,15 +142,12 @@ export default function NodeCard({
 
   const expDays = daysUntil(node.expired_at);
   const expSoon = expDays !== null && expDays <= 15;
-  const cycle = Number(node.billing_cycle);
   const price = Number(node.price);
   const remainingValue =
     expDays !== null && Number.isFinite(price) && price > 0
-      ? price * Math.min(
-          Math.max(expDays, 0) / (Number.isFinite(cycle) && cycle > 0 ? cycle : expDays || 1),
-          1,
-        )
+      ? calculateRemainingValue(node)
       : null;
+  const expirationUrgent = expDays !== null && expDays < 8;
   const currencySymbol = CURRENCY_SYMBOLS[normalizeCurrency(node.currency)];
   const remainingValueText =
     price < 0
@@ -258,6 +257,8 @@ export default function NodeCard({
           title={`${t("remainingDays")} / ${t("remainingValue")}`}
           firstIcon="◷"
           first={remainingDaysText}
+          firstColor={expirationUrgent ? "#f43f5e" : undefined}
+          firstValueColor={expirationUrgent ? "#f43f5e" : undefined}
           secondIcon="¤"
           second={remainingValueText}
         />

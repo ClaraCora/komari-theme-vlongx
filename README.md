@@ -1,6 +1,6 @@
 # Tasogare 黄昏 自选延迟版
 
-当前版本：`v2.1.2`
+当前版本：`v2.1.3`
 
 本项目基于 [tryingmeow/komari-theme-tasogare](https://github.com/tryingmeow/komari-theme-tasogare) 修改。感谢原作者及所有贡献者的开发、维护与开源分享。
 

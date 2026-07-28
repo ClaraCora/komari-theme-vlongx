@@ -154,9 +154,9 @@ export function priceCNY(node: NodeInfo, rates: ExchangeRates): number {
   return currency === "CNY" ? price : price / rates[currency];
 }
 
-export function remainingValueCNY(node: NodeInfo, rates: ExchangeRates, now = new Date()): number {
-  const price = priceCNY(node, rates);
-  if (price <= 0 || !node.expired_at) return 0;
+export function remainingValue(node: NodeInfo, now = new Date()): number {
+  const price = Number(node.price);
+  if (!Number.isFinite(price) || price <= 0 || !node.expired_at) return 0;
 
   const expires = new Date(node.expired_at).getTime();
   if (!Number.isFinite(expires)) return 0;
@@ -169,7 +169,14 @@ export function remainingValueCNY(node: NodeInfo, rates: ExchangeRates, now = ne
   if (!Number.isFinite(cycle) || cycle <= 0) return price;
 
   const remainingDays = Math.ceil(diffMs / MS_PER_DAY);
-  return price * Math.min(remainingDays / cycle, 1);
+  return price * (remainingDays / cycle);
+}
+
+export function remainingValueCNY(node: NodeInfo, rates: ExchangeRates, now = new Date()): number {
+  const value = remainingValue(node, now);
+  if (value <= 0) return 0;
+  const currency = normalizeCurrency(node.currency);
+  return currency === "CNY" ? value : value / rates[currency];
 }
 
 export function monthlyCostCNY(node: NodeInfo, rates: ExchangeRates): number {
