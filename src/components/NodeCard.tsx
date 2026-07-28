@@ -1,5 +1,6 @@
 import type { LatestStatus, NodeInfo } from "../lib/api";
-import { daysUntil, fmtBytes, fmtPercent, fmtSpeed, fmtUptime, shortOs, trafficUsed } from "../lib/format";
+import { CURRENCY_SYMBOLS, normalizeCurrency } from "../lib/finance";
+import { daysUntil, fmtBytes, fmtPercent, fmtSpeed, shortOs, trafficUsed } from "../lib/format";
 import { fmtDaysLeft, t } from "../lib/i18n";
 import { osIcon } from "../lib/osIcon";
 import type { ResolvedLatencySelection } from "../lib/latencySelection";
@@ -34,39 +35,63 @@ function tiltLeave(e: React.MouseEvent<HTMLButtonElement>) {
   e.currentTarget.style.transform = "";
 }
 
-const GRADS = {
-  cpu: { grad: "linear-gradient(90deg,#818cf8,#a78bfa)", color: "#8b7cf6" },
-  ram: { grad: "linear-gradient(90deg,#f472b6,#fb7185)", color: "#f4649e" },
-  disk: { grad: "linear-gradient(90deg,#fbbf24,#fb923c)", color: "#f59e2b" },
-  traffic: { grad: "linear-gradient(90deg,#38bdf8,#2dd4bf)", color: "#14b8c6" },
-  trafficHot: { grad: "linear-gradient(90deg,#fb7185,#f43f5e)", color: "#f43f5e" },
+const METRIC_COLORS = {
+  cpu: "#8b7cf6",
+  ram: "#10b981",
+  disk: "#f59e0b",
+  traffic: "#14b8a6",
+  trafficHot: "#f43f5e",
 };
 
-function Bar({
+function ResourceMetric({
   label,
   pct,
-  grad,
   color,
-  sub,
+  detail,
 }: {
   label: string;
-  pct: number;
-  grad: string;
+  pct: number | null;
   color: string;
-  sub?: string;
+  detail: string;
+}) {
+  const displayPct = pct === null ? "--" : `${pct.toFixed(1)}%`;
+  const markerWidth = pct === null || pct <= 0 ? 0 : Math.max(4, Math.min(100, pct));
+
+  return (
+    <div className="resource-metric">
+      <div className="resource-metric-heading">
+        <span>{label}</span>
+        <strong className="num" style={{ color }}>{displayPct}</strong>
+      </div>
+      <div className="resource-meter-track" aria-hidden="true">
+        <span style={{ width: `${markerWidth}%`, background: color }} />
+      </div>
+      <div className="resource-metric-detail num" title={detail}>{detail}</div>
+    </div>
+  );
+}
+
+function StatPair({
+  firstIcon,
+  first,
+  firstColor,
+  secondIcon,
+  second,
+  secondColor,
+  title,
+}: {
+  firstIcon: string;
+  first: string;
+  firstColor?: string;
+  secondIcon: string;
+  second: string;
+  secondColor?: string;
+  title: string;
 }) {
   return (
-    <div>
-      <div className="flex items-baseline justify-between mb-1">
-        <span className="text-[12px] text-dim">{label}</span>
-        <span className="text-[13px] font-semibold num" style={{ color }}>
-          {pct.toFixed(pct >= 10 ? 0 : 1)}%
-          {sub && <span className="text-dim font-normal text-[11px]"> · {sub}</span>}
-        </span>
-      </div>
-      <div className="bar-track">
-        <div className="bar-fill" style={{ width: `${pct}%`, background: grad }} />
-      </div>
+    <div className="resource-stat-pair num" title={title}>
+      <span><i style={{ color: firstColor }}>{firstIcon}</i>{first}</span>
+      <span><i style={{ color: secondColor }}>{secondIcon}</i>{second}</span>
     </div>
   );
 }
@@ -111,10 +136,34 @@ export default function NodeCard({
   const trafficLimit = node.traffic_limit || 0;
   const trafficUse = status ? trafficUsed(status.net_total_up, status.net_total_down, node.traffic_limit_type) : 0;
   const trafficPct = trafficLimit > 0 ? Math.min(100, (trafficUse / trafficLimit) * 100) : 0;
-  const trafficStyle = trafficPct >= 90 ? GRADS.trafficHot : GRADS.traffic;
+  const trafficColor = trafficPct >= 90 ? METRIC_COLORS.trafficHot : METRIC_COLORS.traffic;
 
   const expDays = daysUntil(node.expired_at);
   const expSoon = expDays !== null && expDays <= 15;
+  const cycle = Number(node.billing_cycle);
+  const price = Number(node.price);
+  const remainingValue =
+    expDays !== null && Number.isFinite(price) && price > 0
+      ? price * Math.min(
+          Math.max(expDays, 0) / (Number.isFinite(cycle) && cycle > 0 ? cycle : expDays || 1),
+          1,
+        )
+      : null;
+  const currencySymbol = CURRENCY_SYMBOLS[normalizeCurrency(node.currency)];
+  const remainingValueText =
+    price < 0
+      ? t("free")
+      : remainingValue === null
+        ? "--"
+        : `${currencySymbol}${new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(remainingValue)}`;
+  const remainingDaysText =
+    expDays === null
+      ? "--"
+      : expDays < 0
+        ? t("expired")
+        : expDays > 36500
+          ? t("longterm")
+          : fmtDaysLeft(expDays);
 
   const tags = (node.tags || "")
     .split(";")
@@ -155,32 +204,63 @@ export default function NodeCard({
         <span className="text-[11px] text-dim">{online ? t("online") : t("offline")}</span>
       </div>
 
-      {/* resource bars */}
-      <div className="flex flex-col gap-2.5">
-        <Bar label={t("cpu")} pct={online ? cpu : 0} grad={GRADS.cpu.grad} color={GRADS.cpu.color} />
-        <Bar
+      {/* compact two-column resource metrics */}
+      <div className="resource-grid">
+        <ResourceMetric
+          label={t("cpu")}
+          pct={online ? cpu : 0}
+          color={METRIC_COLORS.cpu}
+          detail={online && status ? `${status.load.toFixed(2)}, ${status.load5.toFixed(2)}, ${status.load15.toFixed(2)}` : "--"}
+        />
+        <ResourceMetric
           label={t("ram")}
           pct={online ? ramPct : 0}
-          grad={GRADS.ram.grad}
-          color={GRADS.ram.color}
-          sub={online && status ? `${fmtBytes(status.ram)} / ${fmtBytes(status.ram_total || node.mem_total)}` : undefined}
+          color={METRIC_COLORS.ram}
+          detail={online && status ? `${fmtBytes(status.ram)} / ${fmtBytes(status.ram_total || node.mem_total)}` : "--"}
         />
-        <Bar
+        <ResourceMetric
           label={t("disk")}
           pct={online ? diskPct : 0}
-          grad={GRADS.disk.grad}
-          color={GRADS.disk.color}
-          sub={online && status ? `${fmtBytes(status.disk)} / ${fmtBytes(status.disk_total || node.disk_total)}` : undefined}
+          color={METRIC_COLORS.disk}
+          detail={online && status ? `${fmtBytes(status.disk)} / ${fmtBytes(status.disk_total || node.disk_total)}` : "--"}
         />
-        {trafficLimit > 0 && (
-          <Bar
-            label={t("traffic")}
-            pct={online ? trafficPct : 0}
-            grad={trafficStyle.grad}
-            color={trafficStyle.color}
-            sub={online && status ? `${fmtBytes(trafficUse)} / ${fmtBytes(trafficLimit)}` : undefined}
-          />
-        )}
+        <ResourceMetric
+          label={t("traffic")}
+          pct={trafficLimit > 0 ? (online ? trafficPct : 0) : null}
+          color={trafficColor}
+          detail={
+            online && status
+              ? `${fmtBytes(trafficUse)} / ${trafficLimit > 0 ? fmtBytes(trafficLimit) : t("unlimited")}`
+              : "--"
+          }
+        />
+      </div>
+
+      {/* realtime speed, accumulated traffic, and remaining term/value */}
+      <div className="resource-secondary-grid">
+        <StatPair
+          title={t("netSpeed")}
+          firstIcon="↑"
+          first={online && status ? fmtSpeed(status.net_out) : "--"}
+          firstColor="#10b981"
+          secondIcon="↓"
+          second={online && status ? fmtSpeed(status.net_in) : "--"}
+          secondColor="#3b82f6"
+        />
+        <StatPair
+          title={t("totalTraffic")}
+          firstIcon="↥"
+          first={online && status ? fmtBytes(status.net_total_up) : "--"}
+          secondIcon="↧"
+          second={online && status ? fmtBytes(status.net_total_down) : "--"}
+        />
+        <StatPair
+          title={`${t("remainingDays")} / ${t("remainingValue")}`}
+          firstIcon="◷"
+          first={remainingDaysText}
+          secondIcon="¤"
+          second={remainingValueText}
+        />
       </div>
 
       {/* TCP / UDP connection counts sit directly below traffic */}
@@ -199,21 +279,6 @@ export default function NodeCard({
           hoverSelections={allLatencyTasks}
         />
       )}
-
-      {/* speed / uptime are intentionally placed below TCPing */}
-      <div className="flex items-center justify-between mt-3.5 text-[12px] num">
-        {online && status ? (
-          <>
-            <span>
-              <span style={{ color: "#fb7185" }}>↑</span> {fmtSpeed(status.net_out)}{" "}
-              <span style={{ color: "#2dd4bf" }}>↓</span> {fmtSpeed(status.net_in)}
-            </span>
-            <span className="text-dim">⏱ {fmtUptime(status.uptime, t)}</span>
-          </>
-        ) : (
-          <span className="text-dim">{t("offline_hint")}</span>
-        )}
-      </div>
 
       {(tags.length > 0 || expSoon) && (
         <div className="flex gap-1.5 mt-2.5 flex-wrap">

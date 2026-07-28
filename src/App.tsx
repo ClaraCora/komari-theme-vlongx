@@ -192,6 +192,14 @@ export default function App() {
               style={{ background: "var(--accent)" }}
             />
           </h1>
+          <a
+            href="/admin"
+            className="glass rounded-full w-10 h-10 grid place-items-center text-[17px] cursor-pointer card-hover"
+            aria-label={t("admin")}
+            title={t("admin")}
+          >
+            <span aria-hidden>👨‍💼</span>
+          </a>
           {latencyPickerEnabled && (
             <button
               onClick={() => setLatencySelectorOpen(true)}
@@ -281,7 +289,7 @@ export default function App() {
 
         <div className="site-footer mt-10">
           <VisitorInfo enabled={showVisitorIp} endpoint={visitorIpEndpoint} />
-          <footer className="text-center text-[12px] text-dim">
+          <footer className="powered-footer text-center text-[12px] text-dim" aria-hidden="true">
             Powered by{" "}
             <a href="https://github.com/komari-monitor/komari" className="underline opacity-80 hover:opacity-100">
               Komari
