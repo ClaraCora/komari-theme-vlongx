@@ -70,6 +70,13 @@ jobs:
           下载 \`${ZIP}\`，在 Komari 后台主题管理中直接上传 ZIP，不要解压。
           EOF
 
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            gh api --method PATCH \
+              "repos/${GITHUB_REPOSITORY}/git/refs/tags/${TAG}" \
+              -f sha="$GITHUB_SHA" \
+              -F force=true >/dev/null
+          fi
+
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release edit "$TAG" \
               --target "$GITHUB_SHA" \
