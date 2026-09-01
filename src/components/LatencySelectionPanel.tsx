@@ -15,13 +15,13 @@ import { getPingRecords } from "../lib/api";
 import { t } from "../lib/i18n";
 import {
   findLiveStat,
-  latencyPanelTitle,
   taskAppliesToNode,
   type ResolvedLatencySelection,
 } from "../lib/latencySelection";
-import { lossColor, pingColor } from "../lib/ping";
+import { pingColor, pingTier, TIER_COLORS } from "../lib/ping";
 
 const HISTORY_HOURS = 4;
+const HISTORY_BUCKETS = 20;
 const HISTORY_REFRESH = 5 * 60_000;
 const RANGE_OPTIONS = [1, 6, 12, 24, 168] as const;
 type RangeHours = (typeof RANGE_OPTIONS)[number];
@@ -38,11 +38,17 @@ interface LiveSummary {
   samples: number;
 }
 
+interface Segment {
+  tier: number;
+}
+
+type HistoryMap = Record<string, (Segment | null)[] | null>;
 type SummaryMap = Record<string, TaskSummary>;
 type LiveMap = Record<string, LiveSummary>;
 type ChartPoint = { time: string; timestamp: number; [key: string]: string | number | undefined };
 
 interface LatencyData {
+  history: HistoryMap;
   chart: ChartPoint[];
   summary: SummaryMap;
   loading: boolean;
@@ -63,11 +69,13 @@ const taskKey = (taskId: number) => `task_${taskId}`;
 const lossKey = (taskId: number) => `loss_${taskId}`;
 
 function emptyData(selections: ResolvedLatencySelection[]): LatencyData {
+  const history: HistoryMap = {};
   const summary: SummaryMap = {};
   for (const item of selections) {
+    history[taskKey(item.taskId)] = null;
     summary[taskKey(item.taskId)] = { average: null, latest: null, samples: 0 };
   }
-  return { summary, chart: [], loading: false };
+  return { history, summary, chart: [], loading: false };
 }
 
 function liveSummary(
@@ -91,6 +99,37 @@ function liveSummary(
     };
   }
   return output;
+}
+
+function bucketize(records: PingRecord[]): (Segment | null)[] | null {
+  const now = Date.now();
+  const span = HISTORY_HOURS * 3600_000;
+  const start = now - span;
+  const buckets = Array.from({ length: HISTORY_BUCKETS }, () => ({ sum: 0, ok: 0, total: 0 }));
+
+  for (const record of records) {
+    const timestamp = new Date(record.time).getTime();
+    if (!Number.isFinite(timestamp) || timestamp < start || timestamp > now) continue;
+    const index = Math.min(
+      HISTORY_BUCKETS - 1,
+      Math.max(0, Math.floor(((timestamp - start) / span) * HISTORY_BUCKETS)),
+    );
+    const bucket = buckets[index];
+    bucket.total++;
+    if (record.value > 0) {
+      bucket.sum += record.value;
+      bucket.ok++;
+    }
+  }
+
+  if (buckets.every((bucket) => bucket.total === 0)) return null;
+
+  return buckets.map((bucket) => {
+    if (!bucket.total) return null;
+    const loss = Math.round(((bucket.total - bucket.ok) / bucket.total) * 100);
+    const latency = bucket.ok ? Math.round(bucket.sum / bucket.ok) : 0;
+    return { tier: pingTier(latency, loss) };
+  });
 }
 
 function formatAxisTime(timestamp: number, hours: RangeHours): string {
@@ -216,7 +255,12 @@ function useLatencyData(
         const response = await getPingRecords(uuid, Math.max(HISTORY_HOURS, rangeHours));
         if (!stopped) {
           const grouped = recordsByTask(response.records || [], selections);
+          const history: HistoryMap = {};
+          for (const item of selections) {
+            history[taskKey(item.taskId)] = bucketize(grouped.get(item.taskId) || []);
+          }
           setData({
+            history,
             chart: buildChartData(grouped, selections, rangeHours),
             summary: buildSummary(grouped, selections, rangeHours),
             loading: false,
@@ -238,49 +282,44 @@ function useLatencyData(
   return data;
 }
 
-function compactLatency(value: number | null): string {
-  if (value === null) return "--";
-  const rounded = Math.round(value);
-  if (rounded < 1000) return String(rounded);
-  return `${(rounded / 1000).toFixed(rounded < 10000 ? 1 : 0)}k`;
-}
-
-function compactLoss(value: number | null): string {
-  if (value === null) return "--";
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
-}
-
 function taskDescription(item: ResolvedLatencySelection, current: LiveSummary): string {
   return isZh
     ? `${item.label} ${item.typeLabel}，延迟 ${current.latency === null ? "暂无数据" : `${Math.round(current.latency)} 毫秒`}，丢包 ${current.loss === null ? "暂无数据" : `${current.loss}%`}`
     : `${item.label} ${item.typeLabel}, latency ${current.latency === null ? "unavailable" : `${Math.round(current.latency)} milliseconds`}, packet loss ${current.loss === null ? "unavailable" : `${current.loss}%`}`;
 }
 
-function CompactTask({
+function HistoryStrip({ segments }: { segments: (Segment | null)[] | null }) {
+  const data = segments || Array.from({ length: HISTORY_BUCKETS }, () => null);
+  return (
+    <div className="tcping-history" aria-hidden>
+      {data.map((segment, index) => (
+        <span
+          key={index}
+          className="tcping-history-segment"
+          style={segment
+            ? { background: TIER_COLORS[segment.tier], opacity: 0.9 }
+            : { background: "var(--track)", opacity: 0.7 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function HistoryTask({
   item,
-  index,
   current,
+  history,
 }: {
   item: ResolvedLatencySelection;
-  index: number;
   current: LiveSummary;
+  history: (Segment | null)[] | null;
 }) {
-  const latencyText = compactLatency(current.latency);
-  const lossText = compactLoss(current.loss);
-  const latencyColor = current.latency === null ? "var(--text-dim)" : pingColor(current.latency);
-  const lossValueColor = current.loss === null ? "var(--text-dim)" : lossColor(current.loss) || "var(--text-dim)";
   const description = taskDescription(item, current);
 
   return (
-    <div className="tcping-compact-task" role="group" title={description} aria-label={description}>
-      <span className="tcping-compact-dot" style={{ background: item.color }} aria-hidden />
-      <span className="tcping-compact-index" aria-hidden>{index + 1}</span>
-      <span className="tcping-compact-label" aria-hidden>{item.label}</span>
-      <span className="tcping-compact-value num" aria-hidden>
-        <span style={{ color: latencyColor }}>{latencyText}</span>
-        <span className="tcping-compact-separator">/</span>
-        <span style={{ color: lossValueColor }}>{lossText}</span>
-      </span>
+    <div className="tcping-task-column" role="group" title={description} aria-label={description}>
+      <div className="tcping-task-label" aria-hidden>{item.label}</div>
+      <HistoryStrip segments={history} />
     </div>
   );
 }
@@ -551,6 +590,7 @@ interface Props {
 export default function LatencySelectionPanel({
   uuid,
   nodeName,
+  cardIndex,
   ping,
   selections,
   hoverSelections,
@@ -575,9 +615,15 @@ export default function LatencySelectionPanel({
   const cardSummaryLabel = applicableSelections
     .map((item) => taskDescription(item, cardLive[taskKey(item.taskId)] || { latency: null, loss: null, samples: 0 }))
     .join(isZh ? "；" : "; ");
-  const cardTitle = latencyPanelTitle(applicableSelections, isZh);
   const hoverTitle = isZh ? "延迟监测" : "Latency Monitor";
   const [rangeHours, setRangeHours] = useState<RangeHours>(1);
+  const cardData = useLatencyData(
+    uuid,
+    applicableSelections.length > 0,
+    cardIndex,
+    applicableSelections,
+    1,
+  );
 
   const panelRef = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
@@ -665,17 +711,13 @@ export default function LatencySelectionPanel({
       }}
       tabIndex={0}
     >
-      <div className={`tcping-compact-row task-count-${applicableSelections.length}`}>
-        <div className="tcping-compact-heading">
-          <span className="tcping-panel-title" title={cardTitle}>{cardTitle}</span>
-          <span className="tcping-panel-window">ms/%</span>
-        </div>
-        {applicableSelections.map((item, index) => (
-          <CompactTask
+      <div className={`tcping-task-grid task-count-${applicableSelections.length}`}>
+        {applicableSelections.map((item) => (
+          <HistoryTask
             key={item.taskId}
             item={item}
-            index={index}
             current={cardLive[taskKey(item.taskId)] || { latency: null, loss: null, samples: 0 }}
+            history={cardData.history[taskKey(item.taskId)] || null}
           />
         ))}
       </div>
