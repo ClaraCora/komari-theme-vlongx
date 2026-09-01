@@ -315,10 +315,15 @@ function HistoryTask({
   history: (Segment | null)[] | null;
 }) {
   const description = taskDescription(item, current);
+  const latencyText = current.latency === null ? "--ms" : `${Math.round(current.latency)}ms`;
+  const latencyColor = current.latency === null ? "var(--text-dim)" : pingColor(current.latency);
 
   return (
     <div className="tcping-task-column" role="group" title={description} aria-label={description}>
-      <div className="tcping-task-label" aria-hidden>{item.label}</div>
+      <div className="tcping-task-label" aria-hidden>
+        <span className="tcping-task-name">{item.label}</span>
+        <span className="tcping-task-latency num" style={{ color: latencyColor }}>({latencyText})</span>
+      </div>
       <HistoryStrip segments={history} />
     </div>
   );

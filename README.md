@@ -1,6 +1,12 @@
 # Tasogare 黄昏 自选延迟 GPU 版
 
-当前版本：`v2.2.6`
+当前版本：`v2.2.7`
+
+## v2.2.7 更新
+
+- 每个任务名称后增加实时延迟，例如 `1.1.1.1 (38ms)`。
+- 实时延迟根据状态显示绿、黄、红色，无数据时显示 `(--ms)`。
+- 窄卡片优先保留延迟数值，长任务名自动截断，历史点状条保持完整。
 
 ## v2.2.6 更新
 
@@ -125,6 +131,6 @@ traffic-reset:13
 
 ## 安装
 
-下载 Release 中的 `komari-theme-tasogare-latency-2.2.6-komari.zip`，在 Komari 后台进入主题管理并直接上传 ZIP，不要解压。
+下载 Release 中的 `komari-theme-tasogare-latency-2.2.7-komari.zip`，在 Komari 后台进入主题管理并直接上传 ZIP，不要解压。
 
 本项目继续遵循原项目许可证。
