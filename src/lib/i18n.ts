@@ -6,6 +6,10 @@ const zh = {
   hour: "时",
   min: "分",
   cpu: "CPU",
+  gpu: "GPU",
+  gpuUsage: "GPU 使用率",
+  gpuMemory: "GPU 显存",
+  sharedMemory: "共享内存",
   ram: "内存",
   disk: "硬盘",
   swap: "SWAP",
@@ -62,6 +66,10 @@ const en: typeof zh = {
   hour: "h",
   min: "m",
   cpu: "CPU",
+  gpu: "GPU",
+  gpuUsage: "GPU Usage",
+  gpuMemory: "GPU Memory",
+  sharedMemory: "Shared memory",
   ram: "RAM",
   disk: "Disk",
   swap: "SWAP",
@@ -122,6 +130,7 @@ export const fmtDaysLeft = (d: number): string => (isZh ? `剩 ${d} 天` : `${d}
 // billing cycle in days → human label
 export const fmtCycle = (days: number): string => {
   if (days >= 360 && days <= 370) return isZh ? "年" : "yr";
+  if (days >= 178 && days <= 186) return isZh ? "半年" : "6mo";
   if (days >= 88 && days <= 92) return isZh ? "季" : "qtr";
   if (days >= 28 && days <= 31) return isZh ? "月" : "mo";
   return isZh ? `${days} 天` : `${days}d`;
