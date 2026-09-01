@@ -1,6 +1,12 @@
 # Tasogare 黄昏 自选延迟 GPU 版
 
-当前版本：`v2.2.4`
+当前版本：`v2.2.5`
+
+## v2.2.5 更新
+
+- 将卡片 TCPing 压缩为单行摘要，依次显示最多 3 个任务的“延迟/丢包”实时数据。
+- 极窄卡片自动用彩色任务编号代替名称，完整任务名、协议和精确数据仍可通过提示及点击详情查看。
+- 移除首页重复的双列数据和历史点阵，完整历史图表改为点击后按需加载，减少首页初始请求。
 
 ## v2.2.4 更新
 
@@ -112,6 +118,6 @@ traffic-reset:13
 
 ## 安装
 
-下载 Release 中的 `komari-theme-tasogare-latency-2.2.4-komari.zip`，在 Komari 后台进入主题管理并直接上传 ZIP，不要解压。
+下载 Release 中的 `komari-theme-tasogare-latency-2.2.5-komari.zip`，在 Komari 后台进入主题管理并直接上传 ZIP，不要解压。
 
 本项目继续遵循原项目许可证。

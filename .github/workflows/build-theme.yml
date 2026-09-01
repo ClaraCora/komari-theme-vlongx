@@ -56,13 +56,13 @@ jobs:
           cat > release-notes.md <<EOF
           ## Tasogare 黄昏 自选延迟 GPU v${VERSION}
 
-          已同步上游 v2.2.3，并保留 ClaraCora 个人版界面与功能。
+          本版本压缩了首页 TCPing 区域，并保留 ClaraCora 个人版界面与功能。
 
           ### 本次更新
-          - 新增 GPU/iGPU 详情、月流量周期、动态账单与完整在线天数。
-          - 合入 TCPing 底部安全间距、窄屏和高 DPI 修复。
+          - TCPing 延迟与丢包改为一行显示，最多容纳 3 个任务。
+          - 极窄卡片自动使用彩色任务编号，避免名称和数值溢出。
+          - 首页不再预先请求 TCPing 历史，点击详情时再加载完整图表。
           - 保留双列资源进度条、实时/累计上下行流量、剩余天数和剩余价值。
-          - 剩余价值按完整剩余天数跨计费周期计算，少于 8 天时标红。
           - 保留管理员入口、隐藏式底部署名和 ClaraCora 仓库更新地址。
 
           ### 安装
@@ -79,12 +79,12 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release edit "$TAG" \
               --target "$GITHUB_SHA" \
-              --title "v${VERSION} — Sync upstream and preserve personal layout" \
+              --title "v${VERSION} — Compact TCPing summary" \
               --notes-file release-notes.md
             gh release upload "$TAG" "$ZIP" --clobber
           else
             gh release create "$TAG" "$ZIP" \
               --target "$GITHUB_SHA" \
-              --title "v${VERSION} — Sync upstream and preserve personal layout" \
+              --title "v${VERSION} — Compact TCPing summary" \
               --notes-file release-notes.md
           fi
