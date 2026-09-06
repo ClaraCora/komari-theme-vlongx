@@ -54,18 +54,16 @@ jobs:
         shell: bash
         run: |
           cat > release-notes.md <<EOF
-          ## Tasogare 黄昏 自选延迟 GPU v${VERSION}
+          ## Tasogare 黄昏 自选延迟 v${VERSION}
 
-          本版本在两行延迟任务布局中增加实时延迟数值，并保留 ClaraCora 个人版界面与功能。
+          本版本以 v2.1.3 为应用基线，在节点卡片右上角增加在线天数和账单金额。
 
           ### 本次更新
-          - 每个任务名称后显示实时延迟，例如 1.1.1.1 (38ms)。
-          - 实时延迟按状态显示绿、黄、红色，无数据时显示 (--ms)。
-          - 窄卡片优先保留延迟数值，长任务名自动截断。
-          - 第二行继续显示过去 4 小时的 20 段历史状态点状条。
-          - 点击延迟区域仍可查看完整实时数据与历史图表。
-          - 保留双列资源进度条、实时/累计上下行流量、剩余天数和剩余价值。
-          - 保留管理员入口、隐藏式底部署名和 ClaraCora 仓库更新地址。
+          - 节点卡片右上角显示完整在线天数，例如 在线 10天。
+          - 在线状态下方按节点后台账单显示金额、币种和计费周期，例如 \$25/年、€17.99/月、€281.7/半年。
+          - 支持免费节点、月付、季付、半年付、年付和自定义天数计费周期。
+          - 恢复 v2.1.3 的 TCPing 延迟/丢包双列历史图和点击详情。
+          - 保留跨周期剩余价值、少于 8 天标红、资源进度条、管理员入口和个人仓库更新地址。
 
           ### 安装
           下载 \`${ZIP}\`，在 Komari 后台主题管理中直接上传 ZIP，不要解压。
@@ -81,12 +79,14 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release edit "$TAG" \
               --target "$GITHUB_SHA" \
-              --title "v${VERSION} — Live latency beside task names" \
-              --notes-file release-notes.md
+              --title "v${VERSION} — Header uptime and billing" \
+              --notes-file release-notes.md \
+              --latest
             gh release upload "$TAG" "$ZIP" --clobber
           else
             gh release create "$TAG" "$ZIP" \
               --target "$GITHUB_SHA" \
-              --title "v${VERSION} — Live latency beside task names" \
-              --notes-file release-notes.md
+              --title "v${VERSION} — Header uptime and billing" \
+              --notes-file release-notes.md \
+              --latest
           fi
