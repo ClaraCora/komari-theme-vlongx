@@ -109,6 +109,24 @@ export function taskAppliesToNode(task: PingTask, uuid: string): boolean {
   return clients.length === 0;
 }
 
+export function selectNodeCardTasks(
+  preferred: ResolvedLatencySelection[],
+  allTasks: ResolvedLatencySelection[],
+  uuid: string,
+): ResolvedLatencySelection[] {
+  const output: ResolvedLatencySelection[] = [];
+  const seen = new Set<number>();
+
+  for (const item of [...preferred, ...allTasks]) {
+    if (seen.has(item.taskId) || !taskAppliesToNode(item.task, uuid)) continue;
+    seen.add(item.taskId);
+    output.push(item);
+    if (output.length >= MAX_LATENCY_SELECTIONS) break;
+  }
+
+  return output;
+}
+
 export function parseThemeSelections(
   idsRaw: unknown,
   aliasesRaw: unknown,

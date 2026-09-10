@@ -2,7 +2,7 @@
   "name": "Tasogare 黄昏 自选延迟",
   "short": "tasogare-tcping",
   "description": "Tasogare glassmorphism theme with configurable latency cards, click-to-open all-task latency details, packet-loss event bars, TCP/UDP counters, remaining value, and visitor IP footer. 基于 Tasogare 黄昏：首页自选延迟、点击查看全部任务、丢包竖条、连接数、剩余价值与底部访问 IP。",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "author": "tryingmeow (carrier latency modification by vlongx)",
   "url": "https://github.com/ClaraCora/komari-theme-vlongx",
   "preview": "preview.png",
@@ -65,14 +65,14 @@
         "type": "switch",
         "default": true,
         "name": {
-          "en": "Show selected latency tasks on cards",
-          "zh-CN": "卡片显示自选延迟任务",
+          "en": "Show latency tasks on cards",
+          "zh-CN": "卡片显示延迟任务",
           "ja": "カードに選択した遅延タスクを表示"
         },
         "help": {
-          "en": "Cards show only the visitor-selected 0-3 exact tasks. Clicking the latency area opens every task assigned to the node, with colored vertical bars marking packet loss or disconnects. Tasks are never merged automatically.",
-          "zh-CN": "首页卡片仅展示用户选择的 0～3 项明确任务；点击卡片延迟区域后，详情面板展示当前节点被分配的全部延迟任务，并以彩色竖条标出丢包或断连。不同任务不会自动合并平均。",
-          "ja": "選択した0～3件のKomari遅延タスクを表示します。タスク間の平均化は行いません。"
+          "en": "Each node card shows up to 3 assigned tasks of any type. Preferred tasks are shown first and remaining slots are filled automatically. Clicking the latency area opens every task assigned to the node.",
+          "zh-CN": "每个节点卡片最多显示 3 个已分配的延迟任务，不限制 TCPing、ICMP 或 HTTP 类型。自选任务优先，其余位置自动补足；点击延迟区域可查看该节点全部任务。",
+          "ja": "各ノードカードに、種類を問わず割り当て済みタスクを最大3件表示します。選択したタスクを優先し、残りは自動補完します。"
         }
       },
       {
@@ -85,9 +85,9 @@
           "ja": "ホーム遅延タスク選択を有効化"
         },
         "help": {
-          "en": "Lets each browser choose the 0-3 tasks shown on cards and custom labels. Hover details still show all tasks assigned to the node.",
-          "zh-CN": "在首页顶部增加选择按钮，实时读取 Komari 已创建的延迟任务，让用户自由选择卡片展示的 0～3 项并自定义名称；悬浮详情仍显示节点全部任务。",
-          "ja": "Komariの実タスクリストから0～3件を選択し、表示名を設定できます。選択はブラウザに保存されます。"
+          "en": "Lets each browser choose preferred card tasks and custom labels. Each node automatically fills any remaining slots from its assigned tasks.",
+          "zh-CN": "在首页顶部选择优先展示的任务并自定义名称；每个节点会从其已分配任务中自动补足剩余位置，最多显示 3 个。",
+          "ja": "優先表示するタスクと表示名を選択できます。残りの枠は各ノードの割り当て済みタスクから自動補完されます。"
         }
       },
       {
@@ -100,8 +100,8 @@
           "ja": "既定の遅延タスク"
         },
         "help": {
-          "en": "Optional server-wide defaults, up to 3 task IDs or exact names separated by commas, e.g. 1,3,8. Visitors can override them in the homepage picker.",
-          "zh-CN": "可选的全站默认值，填写最多 3 个任务 ID 或完整任务名称，用英文逗号分隔，例如 1,3,8。用户可在首页选择器中覆盖。",
+          "en": "Optional server-wide priorities, up to 3 task IDs or exact names separated by commas, e.g. 1,3,8. Other assigned tasks automatically fill empty card slots.",
+          "zh-CN": "可选的全站优先任务，填写最多 3 个任务 ID 或完整任务名称，用英文逗号分隔，例如 1,3,8。卡片空位会由节点的其他已分配任务自动补足。",
           "ja": "最大3件のタスクIDまたは完全な名前をカンマ区切りで指定します。"
         }
       },

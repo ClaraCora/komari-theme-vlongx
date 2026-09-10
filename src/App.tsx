@@ -204,11 +204,11 @@ export default function App() {
             <button
               onClick={() => setLatencySelectorOpen(true)}
               className="glass latency-picker-trigger rounded-full h-10 px-3.5 flex items-center gap-2 text-[12px] cursor-pointer card-hover"
-              aria-label={"configure latency tasks"}
-              title={"Homepage latency tasks"}
+              aria-label={"configure preferred latency tasks"}
+              title={"Homepage preferred latency tasks"}
             >
               <span aria-hidden>⌁</span>
-              <span>{t("latency")} {resolvedLatencySelections.length}/3</span>
+              <span>{t("latencyPriority")} {resolvedLatencySelections.length}/3</span>
             </button>
           )}
           <button

@@ -16,6 +16,7 @@ import { t } from "../lib/i18n";
 import {
   findLiveStat,
   latencyPanelTitle,
+  selectNodeCardTasks,
   taskAppliesToNode,
   type ResolvedLatencySelection,
 } from "../lib/latencySelection";
@@ -346,7 +347,7 @@ function MetricColumn({
                   <>
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: item.color }} />
                     <span className="tcping-card-label" title={item.task.name}>{item.label}</span>
-                    <span className="tcping-card-type">{item.shortTypeLabel}</span>
+                    <span className="tcping-card-type">{item.typeLabel}</span>
                   </>
                 ) : (
                   <span className="sr-only">{item.label} {item.typeLabel}</span>
@@ -636,8 +637,8 @@ export default function LatencySelectionPanel({
   hoverSelections,
 }: Props) {
   const applicableSelections = useMemo(
-    () => selections.filter((item) => taskAppliesToNode(item.task, uuid)),
-    [selections, uuid],
+    () => selectNodeCardTasks(selections, hoverSelections, uuid),
+    [selections, hoverSelections, uuid],
   );
   const applicableHoverSelections = useMemo(
     () => hoverSelections.filter((item) => taskAppliesToNode(item.task, uuid)),

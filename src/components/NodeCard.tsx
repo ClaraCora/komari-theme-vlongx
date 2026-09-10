@@ -309,7 +309,7 @@ export default function NodeCard({
         <ConnectionsRow tcp={status.connections} udp={status.connections_udp} />
       )}
 
-      {/* User-selected exact latency tasks follow the resource metrics. */}
+      {/* Preferred tasks come first; assigned tasks fill the remaining card slots. */}
       {showLatency && online && (
         <LatencySelectionPanel
           uuid={node.uuid}

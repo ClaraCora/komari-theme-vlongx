@@ -104,8 +104,8 @@ export default function LatencyTaskSelector({
             <strong>{isZh ? "首页延迟监测" : "Homepage latency"}</strong>
             <p>
               {isZh
-                ? "从 Komari 已创建的延迟任务中自由选择 0～3 项。每个展示项只读取一个明确任务，不做跨城市平均。"
-                : "Choose 0–3 existing Komari latency tasks. Each row maps to one exact task, with no cross-task averaging."}
+                ? "从 Komari 已创建的延迟任务中选择 0～3 项优先任务。未选择的空位会由每台机器自己的任务自动补足。"
+                : "Choose 0–3 preferred Komari latency tasks. Empty slots are filled from each node's own assigned tasks."}
             </p>
           </div>
           <button type="button" onClick={onClose} aria-label="close">×</button>
@@ -114,13 +114,13 @@ export default function LatencyTaskSelector({
         <div className="latency-selector-counter">
           <span>{isZh ? "已选择" : "Selected"}</span>
           <strong>{draft.length}/{MAX_LATENCY_SELECTIONS}</strong>
-          <small>{isZh ? "选择 0 项会隐藏首页延迟模块" : "Select 0 to hide the card module"}</small>
+          <small>{isZh ? "选择 0 项时，卡片仍会自动显示机器自己的任务" : "With 0 selected, cards still show each node's assigned tasks"}</small>
         </div>
 
         <div className="latency-selector-selected">
           {draft.length === 0 ? (
             <div className="latency-selector-empty">
-              {isZh ? "当前不显示任何延迟监测项" : "No latency task will be shown"}
+              {isZh ? "当前未设置优先任务，将自动显示机器自己的任务" : "No preferred task; node tasks will be selected automatically"}
             </div>
           ) : (
             draft.map((item, index) => {
