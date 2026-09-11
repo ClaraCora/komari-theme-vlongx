@@ -29,10 +29,7 @@ const RANGE_OPTIONS = [1, 6, 12, 24, 168] as const;
 type RangeHours = (typeof RANGE_OPTIONS)[number];
 
 interface Segment {
-  ms: number | null;
-  loss: number;
-  latencyTier: number;
-  lossTier: number;
+  tier: number;
 }
 
 interface TaskSummary {
@@ -132,13 +129,8 @@ function bucketize(records: PingRecord[]): (Segment | null)[] | null {
   return buckets.map((bucket) => {
     if (!bucket.total) return null;
     const loss = Math.round(((bucket.total - bucket.ok) / bucket.total) * 100);
-    const ms = bucket.ok ? Math.round(bucket.sum / bucket.ok) : null;
-    return {
-      ms,
-      loss,
-      latencyTier: ms === null ? 2 : pingTier(ms, 0),
-      lossTier: pingTier(0, loss),
-    };
+    const latency = bucket.ok ? Math.round(bucket.sum / bucket.ok) : 0;
+    return { tier: pingTier(latency, loss) };
   });
 }
 
@@ -292,7 +284,7 @@ function useLatencyData(
   return data;
 }
 
-function HistoryStrip({ segments, metric }: { segments: (Segment | null)[] | null; metric: "latency" | "loss" }) {
+function HistoryStrip({ segments }: { segments: (Segment | null)[] | null }) {
   const data = segments || Array.from({ length: HISTORY_BUCKETS }, () => null);
   return (
     <div className="tcping-history" aria-hidden>
@@ -302,28 +294,13 @@ function HistoryStrip({ segments, metric }: { segments: (Segment | null)[] | nul
           className="tcping-history-segment"
           style={
             segment
-              ? {
-                  background: TIER_COLORS[metric === "latency" ? segment.latencyTier : segment.lossTier],
-                  opacity: metric === "latency" ? 0.88 : segment.loss > 0 ? 0.95 : 0.78,
-                }
+              ? { background: TIER_COLORS[segment.tier], opacity: 0.9 }
               : { background: "var(--track)", opacity: 0.7 }
           }
         />
       ))}
     </div>
   );
-}
-
-function LossDots({ segments, loss }: { segments: (Segment | null)[] | null; loss: number | null }) {
-  if (segments) return <HistoryStrip segments={segments} metric="loss" />;
-  const tier = pingTier(0, loss ?? 0);
-  const fallback = Array.from({ length: HISTORY_BUCKETS }, () => ({
-    ms: null,
-    loss: loss ?? 0,
-    latencyTier: 0,
-    lossTier: tier,
-  }));
-  return <HistoryStrip segments={fallback} metric="loss" />;
 }
 
 function SchemeBLatencyList({
@@ -345,7 +322,7 @@ function SchemeBLatencyList({
           <div key={item.taskId} className="scheme-b-latency-row">
             <span className="scheme-b-latency-name" title={`${item.label} ${item.typeLabel}`}>{item.label}</span>
             <span className="scheme-b-latency-history">
-              <LossDots segments={history[key] || null} loss={current.loss} />
+              <HistoryStrip segments={history[key] || null} />
             </span>
             <strong className="num" style={{ color: valueColor }}>{current.latency === null ? "-" : `${Math.round(current.latency)} ms`}</strong>
           </div>
