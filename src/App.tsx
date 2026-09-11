@@ -8,6 +8,7 @@ import StatsBar from "./components/StatsBar";
 import NodeCard from "./components/NodeCard";
 import LatencyTaskSelector from "./components/LatencyTaskSelector";
 import VisitorInfo from "./components/VisitorInfo";
+import { readCardVariant, writeCardVariant, type CardVariant } from "./lib/cardVariant";
 import {
   clearStoredSelections,
   parseThemeSelections,
@@ -56,6 +57,39 @@ function useMode(tz: string): [Mode, () => void] {
   return [mode, toggle];
 }
 
+function CardVariantSwitcher({
+  value,
+  onChange,
+}: {
+  value: CardVariant;
+  onChange: (value: CardVariant) => void;
+}) {
+  const labels: Record<CardVariant, string> = {
+    A: "方案 A · 现代工程极简",
+    B: "方案 B · 高密度 DevOps",
+    C: "方案 C · 磨砂玻璃",
+  };
+
+  return (
+    <div className="card-variant-switcher glass" role="group" aria-label="card layout scheme">
+      <span className="card-variant-switcher-label">方案</span>
+      {(["A", "B", "C"] as const).map((variant) => (
+        <button
+          key={variant}
+          type="button"
+          className={`card-variant-option ${value === variant ? "is-active" : ""}`}
+          aria-pressed={value === variant}
+          aria-label={labels[variant]}
+          title={labels[variant]}
+          onClick={() => onChange(variant)}
+        >
+          {variant}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function App() {
   const [pub, setPub] = useState<PublicInfo | null>(null);
   const tz = ((pub?.theme_settings ?? {}) as Record<string, unknown>).timezone as string || "Asia/Shanghai";
@@ -68,7 +102,13 @@ export default function App() {
   const [selected, setSelected] = useState<NodeInfo | null>(null);
   const [latencySelectorOpen, setLatencySelectorOpen] = useState(false);
   const [latencySelections, setLatencySelections] = useState<LatencySelection[]>([]);
+  const [cardVariant, setCardVariant] = useState<CardVariant>(() => readCardVariant());
   const latencySelectionInitialized = useRef(false);
+
+  const changeCardVariant = useCallback((next: CardVariant) => {
+    setCardVariant(next);
+    writeCardVariant(next);
+  }, []);
 
   useEffect(() => {
     getPublicInfo().then((p) => {
@@ -184,8 +224,8 @@ export default function App() {
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-10">
         {/* header */}
-        <header className="flex items-center gap-3 py-5">
-          <h1 className="text-[22px] font-bold tracking-tight flex-1">
+        <header className="site-header flex flex-wrap items-center gap-3 py-5">
+          <h1 className="text-[22px] font-bold tracking-tight flex-1 min-w-0">
             {pub?.sitename || "Komari"}
             <span
               className="inline-block w-2 h-2 rounded-full ml-2 align-middle"
@@ -200,6 +240,7 @@ export default function App() {
           >
             <span aria-hidden>👨‍💼</span>
           </a>
+          <CardVariantSwitcher value={cardVariant} onChange={changeCardVariant} />
           {latencyPickerEnabled && (
             <button
               onClick={() => setLatencySelectorOpen(true)}
@@ -282,6 +323,7 @@ export default function App() {
               showLatency={showLatency}
               latencySelections={resolvedLatencySelections}
               allLatencyTasks={resolvedAllLatencyTasks}
+              variant={cardVariant}
               onClick={() => setSelected(n)}
             />
           ))}

@@ -21,6 +21,7 @@ import {
   type ResolvedLatencySelection,
 } from "../lib/latencySelection";
 import { lossColor, pingColor, pingTier, TIER_COLORS } from "../lib/ping";
+import type { CardVariant } from "../lib/cardVariant";
 
 const HISTORY_HOURS = 4;
 const HISTORY_BUCKETS = 20;
@@ -365,6 +366,134 @@ function MetricColumn({
   );
 }
 
+function LatencySparkline({
+  segments,
+  color,
+}: {
+  segments: (Segment | null)[] | null;
+  color: string;
+}) {
+  const values = (segments || []).map((segment) => segment?.ms ?? null);
+  const valid = values.filter((value): value is number => value !== null && value > 0);
+  if (valid.length < 2) return <HistoryStrip segments={segments} metric="latency" />;
+
+  const min = Math.min(...valid);
+  const max = Math.max(...valid);
+  const span = Math.max(1, max - min);
+  const points = values
+    .map((value, index) => {
+      if (value === null) return null;
+      const x = (index / Math.max(1, values.length - 1)) * 100;
+      const y = 19 - ((value - min) / span) * 14;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .filter((point): point is string => point !== null)
+    .join(" ");
+
+  return (
+    <svg className="scheme-a-sparkline" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SchemeALatencyList({
+  live,
+  history,
+  selections,
+}: {
+  live: LiveMap;
+  history: HistoryMap;
+  selections: ResolvedLatencySelection[];
+}) {
+  return (
+    <div className="scheme-a-latency-list">
+      {selections.map((item) => {
+        const key = taskKey(item.taskId);
+        const current = live[key] || { latency: null, loss: null, samples: 0 };
+        const valueColor = current.latency === null ? "var(--text-dim)" : pingColor(current.latency);
+        return (
+          <div key={item.taskId} className="scheme-a-latency-row">
+            <div className="scheme-a-latency-identity">
+              <span className="scheme-a-latency-dot" style={{ background: item.color }} />
+              <span className="tcping-card-label" title={item.task.name}>{item.label}</span>
+              <span className="tcping-card-type">{item.typeLabel}</span>
+            </div>
+            <LatencySparkline segments={history[key] || null} color={valueColor} />
+            <div className="scheme-a-latency-values num">
+              <strong style={{ color: valueColor }}>
+                {current.latency === null ? "-" : `${Math.round(current.latency)} ms`}
+              </strong>
+              <span>{current.loss === null ? "-" : `${current.loss.toFixed(1)}% ${t("loss")}`}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function latencyQualityWidth(value: number | null): number {
+  if (value === null) return 8;
+  if (value <= 20) return 96;
+  if (value <= 60) return 78;
+  if (value <= 120) return 58;
+  return 36;
+}
+
+function SchemeBLatencyList({
+  live,
+  selections,
+}: {
+  live: LiveMap;
+  selections: ResolvedLatencySelection[];
+}) {
+  return (
+    <div className="scheme-b-latency-list">
+      {selections.map((item) => {
+        const current = live[taskKey(item.taskId)] || { latency: null, loss: null, samples: 0 };
+        const valueColor = current.latency === null ? "var(--text-dim)" : pingColor(current.latency);
+        return (
+          <div key={item.taskId} className="scheme-b-latency-row">
+            <span className="scheme-b-latency-name" title={`${item.label} ${item.typeLabel}`}>{item.label}</span>
+            <span className="scheme-b-latency-track"><span style={{ width: `${latencyQualityWidth(current.latency)}%`, background: valueColor }} /></span>
+            <strong className="num" style={{ color: valueColor }}>{current.latency === null ? "-" : `${Math.round(current.latency)} ms`}</strong>
+            <small className="num">{current.loss === null ? "-" : `${current.loss.toFixed(1)}%`}</small>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SchemeCLatencyList({
+  live,
+  selections,
+}: {
+  live: LiveMap;
+  selections: ResolvedLatencySelection[];
+}) {
+  return (
+    <div className="scheme-c-latency-list">
+      {selections.map((item) => {
+        const current = live[taskKey(item.taskId)] || { latency: null, loss: null, samples: 0 };
+        const valueColor = current.latency === null ? "var(--text-dim)" : pingColor(current.latency);
+        return (
+          <div key={item.taskId} className="scheme-c-pill-row">
+            <span className="scheme-c-node-title" title={`${item.label} ${item.typeLabel}`}>
+              <i style={{ background: item.color }} /> {item.label} <small>{item.typeLabel}</small>
+            </span>
+            <span className="scheme-c-stat-pair">
+              <span className="scheme-c-loss-text num">{current.loss === null ? "-" : `${current.loss.toFixed(1)}% ${t("loss")}`}</span>
+              <strong className="scheme-c-badge-pill num" style={{ color: valueColor }}>{current.latency === null ? "-" : `${Math.round(current.latency)} ms`}</strong>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function LatencyTooltip({
   active,
   payload,
@@ -626,6 +755,7 @@ interface Props {
   ping?: Record<string, PingStat>;
   selections: ResolvedLatencySelection[];
   hoverSelections: ResolvedLatencySelection[];
+  variant?: CardVariant;
 }
 
 export default function LatencySelectionPanel({
@@ -635,6 +765,7 @@ export default function LatencySelectionPanel({
   ping,
   selections,
   hoverSelections,
+  variant = "A",
 }: Props) {
   const applicableSelections = useMemo(
     () => selectNodeCardTasks(selections, hoverSelections, uuid),
@@ -731,7 +862,7 @@ export default function LatencySelectionPanel({
   return (
     <section
       ref={panelRef}
-      className={`tcping-panel ${open ? "is-popover-open" : ""}`}
+      className={`tcping-panel tcping-panel-${variant.toLowerCase()} ${open ? "is-popover-open" : ""}`}
       role="button"
       aria-expanded={open}
       aria-label={isZh ? "点击查看全部延迟与丢包详情" : "Click to view all latency and packet-loss details"}
@@ -752,10 +883,9 @@ export default function LatencySelectionPanel({
         <span className="tcping-panel-title">{cardTitle}</span>
         <span className="tcping-panel-window">4H · {applicableSelections.length}/3</span>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <MetricColumn metric="latency" live={cardLive} history={cardData.history} selections={applicableSelections} />
-        <MetricColumn metric="loss" live={cardLive} history={cardData.history} selections={applicableSelections} />
-      </div>
+      {variant === "A" && <SchemeALatencyList live={cardLive} history={cardData.history} selections={applicableSelections} />}
+      {variant === "B" && <SchemeBLatencyList live={cardLive} selections={applicableSelections} />}
+      {variant === "C" && <SchemeCLatencyList live={cardLive} selections={applicableSelections} />}
 
       <LatencyPopover
         open={open}
