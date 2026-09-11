@@ -20,6 +20,15 @@ html[data-mode="day"] {
   /* keep backdrop saturation neutral: boosting it amplifies the warm
      wallpaper bleeding through and fights the in-card bar colors */
   --glass-sat: 1;
+  --terminal-bg: rgba(241, 245, 249, 0.94);
+  --terminal-text: #475569;
+  --terminal-value: #1e293b;
+  --terminal-muted: #64748b;
+  --terminal-border: rgba(100, 116, 139, 0.24);
+  --terminal-tcp: #4f46e5;
+  --terminal-udp: #059669;
+  --terminal-up: #059669;
+  --terminal-down: #0284c7;
   --veil: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.24));
 }
 
@@ -35,6 +44,15 @@ html[data-mode="night"] {
   --chip: rgba(255, 255, 255, 0.08);
   --accent: #9d8cff;
   --glass-sat: 1.6;
+  --terminal-bg: #090d16;
+  --terminal-text: #94a3b8;
+  --terminal-value: #e2e8f0;
+  --terminal-muted: #64748b;
+  --terminal-border: rgba(148, 163, 184, 0.16);
+  --terminal-tcp: #60a5fa;
+  --terminal-udp: #34d399;
+  --terminal-up: #10b981;
+  --terminal-down: #38bdf8;
   --veil: linear-gradient(180deg, rgba(5, 7, 22, 0.15), rgba(5, 7, 22, 0.35));
 }
 
@@ -404,9 +422,9 @@ body {
 }
 .variant-b-terminal {
   padding: 10px 11px;
-  color: #94a3b8;
-  background: #090d16;
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  color: var(--terminal-text);
+  background: var(--terminal-bg);
+  border: 1px solid var(--terminal-border);
   border-radius: 10px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 10px;
@@ -419,13 +437,13 @@ body {
   gap: 8px;
   min-width: 0;
 }
-.variant-b-terminal strong { color: #e2e8f0; font-weight: 650; }
-.variant-b-terminal small { color: #64748b; }
+.variant-b-terminal strong { color: var(--terminal-value); font-weight: 650; }
+.variant-b-terminal small { color: var(--terminal-muted); }
 .terminal-conn { margin-left: auto; white-space: nowrap; }
-.terminal-conn b { margin-left: 5px; color: #60a5fa; font-weight: 650; }
-.terminal-conn b + b { color: #34d399; }
-.terminal-up { color: #10b981 !important; }
-.terminal-down { color: #38bdf8 !important; }
+.terminal-conn b { margin-left: 5px; color: var(--terminal-tcp); font-weight: 650; }
+.terminal-conn b + b { color: var(--terminal-udp); }
+.terminal-up { color: var(--terminal-up) !important; }
+.terminal-down { color: var(--terminal-down) !important; }
 .variant-b-footer {
   justify-content: space-between;
   margin-top: 10px;
@@ -1629,8 +1647,22 @@ input.search {
   font-size: 10px;
 }
 .scheme-b-latency-name { overflow: hidden; color: var(--text-dim); text-overflow: ellipsis; white-space: nowrap; }
-.scheme-b-latency-track { height: 5px; overflow: hidden; background: var(--track); border-radius: 3px; }
-.scheme-b-latency-track span { display: block; height: 100%; border-radius: inherit; }
+.scheme-b-latency-history { min-width: 0; }
+.scheme-b-latency-history .tcping-history {
+  display: flex;
+  width: 100%;
+  height: 8px;
+  align-items: center;
+  gap: 3px;
+  margin-top: 0;
+  overflow: visible;
+}
+.scheme-b-latency-history .tcping-history-segment {
+  width: 4px;
+  height: 4px;
+  flex: 0 0 4px;
+  border-radius: 50%;
+}
 .scheme-b-latency-row strong { min-width: 43px; font-size: 10px; text-align: right; }
 .scheme-b-latency-row small { min-width: 29px; color: var(--text-dim); font-size: 8.5px; text-align: right; }
 

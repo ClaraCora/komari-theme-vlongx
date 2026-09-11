@@ -433,30 +433,27 @@ function SchemeALatencyList({
   );
 }
 
-function latencyQualityWidth(value: number | null): number {
-  if (value === null) return 8;
-  if (value <= 20) return 96;
-  if (value <= 60) return 78;
-  if (value <= 120) return 58;
-  return 36;
-}
-
 function SchemeBLatencyList({
   live,
+  history,
   selections,
 }: {
   live: LiveMap;
+  history: HistoryMap;
   selections: ResolvedLatencySelection[];
 }) {
   return (
     <div className="scheme-b-latency-list">
       {selections.map((item) => {
+        const key = taskKey(item.taskId);
         const current = live[taskKey(item.taskId)] || { latency: null, loss: null, samples: 0 };
         const valueColor = current.latency === null ? "var(--text-dim)" : pingColor(current.latency);
         return (
           <div key={item.taskId} className="scheme-b-latency-row">
             <span className="scheme-b-latency-name" title={`${item.label} ${item.typeLabel}`}>{item.label}</span>
-            <span className="scheme-b-latency-track"><span style={{ width: `${latencyQualityWidth(current.latency)}%`, background: valueColor }} /></span>
+            <span className="scheme-b-latency-history">
+              <HistoryStrip segments={history[key] || null} metric="latency" />
+            </span>
             <strong className="num" style={{ color: valueColor }}>{current.latency === null ? "-" : `${Math.round(current.latency)} ms`}</strong>
             <small className="num">{current.loss === null ? "-" : `${current.loss.toFixed(1)}%`}</small>
           </div>
@@ -884,7 +881,7 @@ export default function LatencySelectionPanel({
         <span className="tcping-panel-window">4H · {applicableSelections.length}/3</span>
       </div>
       {variant === "A" && <SchemeALatencyList live={cardLive} history={cardData.history} selections={applicableSelections} />}
-      {variant === "B" && <SchemeBLatencyList live={cardLive} selections={applicableSelections} />}
+      {variant === "B" && <SchemeBLatencyList live={cardLive} history={cardData.history} selections={applicableSelections} />}
       {variant === "C" && <SchemeCLatencyList live={cardLive} selections={applicableSelections} />}
 
       <LatencyPopover
