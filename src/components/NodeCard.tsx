@@ -355,7 +355,7 @@ export default function NodeCard({
             <ResourceMetric label={t("disk")} pct={online ? diskPct : 0} color={METRIC_COLORS.disk}
               detail={online && status ? `${fmtBytes(status.disk)}` : "--"} className="variant-b-metric" />
             <ResourceMetric label={t("traffic")} pct={trafficLimit > 0 ? (online ? trafficPct : 0) : null} color={trafficColor}
-              detail={online && status ? `${fmtBytes(trafficUse)}` : "--"} className="variant-b-metric" />
+              detail={online && status ? `${fmtBytes(trafficUse)} / ${trafficLimit > 0 ? fmtBytes(trafficLimit) : t("unlimited")}` : "--"} className="variant-b-metric variant-b-traffic-metric" />
           </div>
           <div className="variant-b-terminal num">
             <div><span>LOAD:</span> <strong>{online && status ? `${status.load.toFixed(2)} ${status.load5.toFixed(2)} ${status.load15.toFixed(2)}` : "--"}</strong><span className="terminal-conn">CONN: <b>{online && status ? `T:${formatCount(status.connections)}` : "T:--"}</b> <b>{online && status ? `U:${formatCount(status.connections_udp)}` : "U:--"}</b></span></div>

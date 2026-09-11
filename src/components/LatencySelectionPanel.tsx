@@ -366,6 +366,18 @@ function MetricColumn({
   );
 }
 
+function LossDots({ segments, loss }: { segments: (Segment | null)[] | null; loss: number | null }) {
+  if (segments) return <HistoryStrip segments={segments} metric="loss" />;
+  const tier = pingTier(0, loss ?? 0);
+  const fallback = Array.from({ length: HISTORY_BUCKETS }, () => ({
+    ms: null,
+    loss: loss ?? 0,
+    latencyTier: 0,
+    lossTier: tier,
+  }));
+  return <HistoryStrip segments={fallback} metric="loss" />;
+}
+
 function LatencySparkline({
   segments,
   color,
@@ -452,10 +464,9 @@ function SchemeBLatencyList({
           <div key={item.taskId} className="scheme-b-latency-row">
             <span className="scheme-b-latency-name" title={`${item.label} ${item.typeLabel}`}>{item.label}</span>
             <span className="scheme-b-latency-history">
-              <HistoryStrip segments={history[key] || null} metric="latency" />
+              <LossDots segments={history[key] || null} loss={current.loss} />
             </span>
             <strong className="num" style={{ color: valueColor }}>{current.latency === null ? "-" : `${Math.round(current.latency)} ms`}</strong>
-            <small className="num">{current.loss === null ? "-" : `${current.loss.toFixed(1)}%`}</small>
           </div>
         );
       })}
