@@ -4,7 +4,6 @@ import { daysUntil, fmtBytes, fmtPercent, fmtSpeed, shortOs, trafficUsed } from 
 import { fmtCycle, fmtDaysLeft, t } from "../lib/i18n";
 import { osIcon } from "../lib/osIcon";
 import type { ResolvedLatencySelection } from "../lib/latencySelection";
-import type { CardVariant } from "../lib/cardVariant";
 import Flag from "./Flag";
 import LatencySelectionPanel from "./LatencySelectionPanel";
 
@@ -15,7 +14,6 @@ interface Props {
   showLatency: boolean;
   latencySelections: ResolvedLatencySelection[];
   allLatencyTasks: ResolvedLatencySelection[];
-  variant: CardVariant;
   onClick: () => void;
 }
 
@@ -75,54 +73,8 @@ function ResourceMetric({
   );
 }
 
-function StatPair({
-  firstIcon,
-  first,
-  firstColor,
-  firstValueColor,
-  secondIcon,
-  second,
-  secondColor,
-  title,
-}: {
-  firstIcon: string;
-  first: string;
-  firstColor?: string;
-  firstValueColor?: string;
-  secondIcon: string;
-  second: string;
-  secondColor?: string;
-  title: string;
-}) {
-  return (
-    <div className="resource-stat-pair num" title={title}>
-      <span style={{ color: firstValueColor }}><i style={{ color: firstColor }}>{firstIcon}</i>{first}</span>
-      <span><i style={{ color: secondColor }}>{secondIcon}</i>{second}</span>
-    </div>
-  );
-}
-
 function formatCount(value: number | undefined): string {
   return Math.max(0, Number(value) || 0).toLocaleString();
-}
-
-function ConnectionsRow({ tcp, udp }: { tcp: number; udp: number }) {
-  return (
-    <div className="connection-row">
-      <span className="text-[12px] text-dim">{t("connections")}</span>
-      <div className="connection-values num">
-        <span className="connection-item">
-          <span className="connection-protocol">{t("tcp")}</span>
-          <strong style={{ color: "#8b7cf6" }}>{formatCount(tcp)}</strong>
-        </span>
-        <span className="connection-divider">·</span>
-        <span className="connection-item">
-          <span className="connection-protocol">{t("udp")}</span>
-          <strong style={{ color: "#14b8c6" }}>{formatCount(udp)}</strong>
-        </span>
-      </div>
-    </div>
-  );
 }
 
 const BILLING_CURRENCY_SYMBOLS: Record<string, string> = {
@@ -146,75 +98,6 @@ function billingText(node: NodeInfo): string | null {
   return cycle ? `${amount}/${cycle}` : amount;
 }
 
-function RingMetric({
-  label,
-  pct,
-  color,
-  detail,
-}: {
-  label: string;
-  pct: number | null;
-  color: string;
-  detail: string;
-}) {
-  const value = pct === null ? 0 : Math.max(0, Math.min(100, pct));
-  return (
-    <div className="variant-c-ring-card">
-      <div className="variant-c-ring" style={{ "--ring-pct": value, "--ring-color": color } as React.CSSProperties}>
-        <span className="num">{pct === null ? "--" : `${pct.toFixed(0)}%`}</span>
-      </div>
-      <div className="variant-c-ring-copy">
-        <strong>{label}</strong>
-        <span className="num" title={detail}>{detail}</span>
-      </div>
-    </div>
-  );
-}
-
-function FlowBox({
-  direction,
-  rate,
-  total,
-}: {
-  direction: "up" | "down";
-  rate: string;
-  total: string;
-}) {
-  const upload = direction === "up";
-  return (
-    <div className={`flow-box flow-box-${direction}`}>
-      <div className="flow-box-label">
-        <span>{upload ? "↑ 上行速率" : "↓ 下行速率"}</span>
-        <span className="flow-box-direction">{upload ? "OUT" : "IN"}</span>
-      </div>
-      <strong className="flow-box-rate num">{rate}</strong>
-      <span className="flow-box-total num">{upload ? "累计已发" : "累计接收"} {total}</span>
-    </div>
-  );
-}
-
-function SlimMetric({
-  label,
-  pct,
-  color,
-  detail,
-}: {
-  label: string;
-  pct: number | null;
-  color: string;
-  detail: string;
-}) {
-  const width = pct === null ? 0 : Math.max(0, Math.min(100, pct));
-  return (
-    <div className="variant-c-slim-metric">
-      <div className="variant-c-slim-head">
-        <span>{label}</span>
-        <span className="num">{detail} {pct === null ? "" : `(${pct.toFixed(1)}%)`}</span>
-      </div>
-      <div className="variant-c-slim-track"><span style={{ width: `${width}%`, background: color }} /></div>
-    </div>
-  );
-}
 
 function onlineDays(uptime: number | undefined): number {
   const seconds = Number(uptime);
@@ -228,7 +111,6 @@ export default function NodeCard({
   showLatency,
   latencySelections,
   allLatencyTasks,
-  variant,
   onClick,
 }: Props) {
   const online = !!status?.online;
@@ -277,7 +159,7 @@ export default function NodeCard({
       onClick={onClick}
       onMouseMove={tiltMove}
       onMouseLeave={tiltLeave}
-      className={`glass node-card node-card-${variant.toLowerCase()} rounded-[20px] p-4 text-left w-full card-hover rise cursor-pointer ${online ? "" : "offline-card"}`}
+      className={`glass node-card node-card-b rounded-[20px] p-4 text-left w-full card-hover rise cursor-pointer ${online ? "" : "offline-card"}`}
       style={{ animationDelay: `${Math.min(index * 55, 600)}ms` }}
     >
       {/* header */}
@@ -310,42 +192,9 @@ export default function NodeCard({
                 : t("offline")}
             </span>
           </div>
-          {billing && variant === "C" && (
-            <span className="max-w-[112px] truncate whitespace-nowrap" title={billing}>
-              {billing}
-            </span>
-          )}
         </div>
       </div>
 
-      {variant === "A" && (
-        <div className="variant-a-body">
-          <div className="resource-grid variant-a-resource-grid">
-            <ResourceMetric label={t("cpu")} pct={online ? cpu : 0} color={METRIC_COLORS.cpu}
-              detail={online && status ? `${status.load.toFixed(2)}, ${status.load5.toFixed(2)}, ${status.load15.toFixed(2)}` : "--"} />
-            <ResourceMetric label={t("ram")} pct={online ? ramPct : 0} color={METRIC_COLORS.ram}
-              detail={online && status ? `${fmtBytes(status.ram)} / ${fmtBytes(status.ram_total || node.mem_total)}` : "--"} />
-            <ResourceMetric label={t("disk")} pct={online ? diskPct : 0} color={METRIC_COLORS.disk}
-              detail={online && status ? `${fmtBytes(status.disk)} / ${fmtBytes(status.disk_total || node.disk_total)}` : "--"} />
-            <ResourceMetric label={t("traffic")} pct={trafficLimit > 0 ? (online ? trafficPct : 0) : null} color={trafficColor}
-              detail={online && status ? `${fmtBytes(trafficUse)} / ${trafficLimit > 0 ? fmtBytes(trafficLimit) : t("unlimited")}` : "--"} />
-          </div>
-          <div className="variant-a-flow-grid">
-            <FlowBox direction="up" rate={online && status ? fmtSpeed(status.net_out) : "--"} total={online && status ? fmtBytes(status.net_total_up) : "--"} />
-            <FlowBox direction="down" rate={online && status ? fmtSpeed(status.net_in) : "--"} total={online && status ? fmtBytes(status.net_total_down) : "--"} />
-          </div>
-          <div className="variant-a-meta-strip">
-            {online && status ? <ConnectionsRow tcp={status.connections} udp={status.connections_udp} /> : <span className="text-dim">{t("offline")}</span>}
-            <div className="variant-billing num">
-              <span>{billing || t("free")}</span><span className="meta-separator">·</span>
-              <span className={expirationUrgent ? "is-urgent" : ""}>{remainingDaysText}</span><span className="meta-separator">·</span>
-              <span>{remainingValueText}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {variant === "B" && (
         <div className="variant-b-body">
           <div className="variant-b-resource-grid">
             <ResourceMetric label={t("cpu")} pct={online ? cpu : 0} color={METRIC_COLORS.cpu}
@@ -363,28 +212,6 @@ export default function NodeCard({
           </div>
           <div className="variant-b-footer num"><span>{billing || t("free")}</span><span className={expirationUrgent ? "is-urgent" : ""}>{remainingDaysText}</span><span>{remainingValueText}</span></div>
         </div>
-      )}
-
-      {variant === "C" && (
-        <div className="variant-c-body">
-          <div className="variant-c-ring-grid">
-            <RingMetric label={t("cpu")} pct={online ? cpu : 0} color={METRIC_COLORS.cpu} detail={online && status ? `Load ${status.load.toFixed(2)}` : "--"} />
-            <RingMetric label={t("ram")} pct={online ? ramPct : 0} color={METRIC_COLORS.ram} detail={online && status ? `${fmtBytes(status.ram)} / ${fmtBytes(status.ram_total || node.mem_total)}` : "--"} />
-          </div>
-          <div className="variant-c-slim-panel">
-            <SlimMetric label={t("disk")} pct={online ? diskPct : 0} color={METRIC_COLORS.disk} detail={online && status ? `${fmtBytes(status.disk)} / ${fmtBytes(status.disk_total || node.disk_total)}` : "--"} />
-            <SlimMetric label={t("traffic")} pct={trafficLimit > 0 ? (online ? trafficPct : 0) : null} color={trafficColor} detail={online && status ? `${fmtBytes(trafficUse)} / ${trafficLimit > 0 ? fmtBytes(trafficLimit) : t("unlimited")}` : "--"} />
-          </div>
-          <div className="variant-c-flow-grid">
-            <FlowBox direction="up" rate={online && status ? fmtSpeed(status.net_out) : "--"} total={online && status ? fmtBytes(status.net_total_up) : "--"} />
-            <FlowBox direction="down" rate={online && status ? fmtSpeed(status.net_in) : "--"} total={online && status ? fmtBytes(status.net_total_down) : "--"} />
-          </div>
-          <div className="variant-c-meta-strip">
-            <span className="num">{online && status ? `TCP ${formatCount(status.connections)} · UDP ${formatCount(status.connections_udp)}` : t("offline")}</span>
-            <span className={`num ${expirationUrgent ? "is-urgent" : ""}`}>{remainingDaysText} · {remainingValueText}</span>
-          </div>
-        </div>
-      )}
 
       {/* Preferred tasks come first; assigned tasks fill the remaining card slots. */}
       {showLatency && online && (
@@ -395,7 +222,6 @@ export default function NodeCard({
           ping={status?.ping}
           selections={latencySelections}
           hoverSelections={allLatencyTasks}
-          variant={variant}
         />
       )}
 
